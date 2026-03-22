@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Shift Manager</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0F172A;color:#F8FAFC;height:100vh;overflow:hidden}
+#app{max-width:480px;margin:0 auto;height:100vh;display:flex;flex-direction:column;position:relative}
+button{font-family:inherit;cursor:pointer;border:none;-webkit-tap-highlight-color:transparent}
+input,select,textarea{font-family:inherit;font-size:16px;background:#1E293B;color:#F8FAFC;border:1px solid #334155;border-radius:8px;padding:12px;width:100%;outline:none;-webkit-appearance:none}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394A3B8' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+
+/* LOGIN */
+.login-view{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px}
+.login-view h1{font-size:28px;font-weight:900;color:#D4A853;margin:12px 0 4px}
+.login-view p{color:#94A3B8;font-size:14px;margin-bottom:24px}
+.login-view select,.login-view input{margin-bottom:10px;text-align:center;font-size:16px;padding:14px}
+.login-btn{width:100%;padding:16px;border-radius:12px;background:#D4A853;color:#0F172A;font-size:16px;font-weight:800;margin-top:8px}
+.login-btn:active{background:#B8922E}
+
+/* HEADER */
+.hdr{padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #334155}
+.hdr-title{font-size:16px;font-weight:800;color:#D4A853;flex:1}
+.hdr-sub{font-size:11px;color:#94A3B8;font-weight:400}
+.hdr-btn{width:36px;height:36px;border-radius:10px;background:#1E293B;color:#F8FAFC;display:flex;align-items:center;justify-content:center;font-size:16px}
+
+/* CONNECTION STATUS */
+.conn-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;flex-shrink:0}
+.conn-dot.online{background:#22C55E;box-shadow:0 0 4px #22C55E}
+.conn-dot.offline{background:#64748B}
+
+/* SHIFTS */
+.shifts{display:flex;gap:8px;padding:10px 16px}
+.shift-btn{flex:1;padding:12px 8px;border-radius:10px;background:#1E293B;color:#94A3B8;font-size:13px;font-weight:700;text-align:center}
+.shift-btn.on{background:#D4A853;color:#0F172A}
+
+/* DATE */
+.datebar{display:flex;align-items:center;padding:6px 16px;gap:8px}
+.datebar button{width:32px;height:32px;border-radius:8px;background:#1E293B;color:#F8FAFC;font-size:16px;display:flex;align-items:center;justify-content:center}
+.datebar .datelbl{flex:1;text-align:center;font-size:14px;font-weight:700}
+
+/* STATS */
+.stats{display:flex;gap:8px;padding:6px 16px}
+.stats div{flex:1;padding:10px;border-radius:8px;background:#1E293B;text-align:center}
+.stats .n{font-size:22px;font-weight:800}
+.stats .l{font-size:9px;color:#94A3B8;text-transform:uppercase;margin-top:2px}
+.stats .done .n{color:#22C55E}
+.stats .pend .n{color:#F59E0B}
+.stats .tot .n{color:#D4A853}
+
+/* TASKS */
+.tasklist{flex:1;overflow-y:auto;padding:8px 16px 80px;-webkit-overflow-scrolling:touch}
+.rgroup{margin-bottom:14px}
+.rgroup-hdr{display:flex;align-items:center;gap:8px;padding:6px 0}
+.rgroup-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.rgroup-hdr h3{font-size:13px;font-weight:700;flex:1}
+.rgroup-hdr .cnt{font-size:11px;color:#94A3B8}
+.pbar{width:40px;height:4px;border-radius:2px;background:#334155;overflow:hidden}
+.pbar-fill{height:100%;border-radius:2px;transition:width .3s}
+
+.task{display:flex;align-items:flex-start;gap:10px;padding:12px;margin-bottom:6px;border-radius:10px;background:#1E293B;position:relative}
+.task.hi{border-left:3px solid #EF4444}
+.task.md{border-left:3px solid #F59E0B}
+.task.dn{opacity:.45}
+.task.dn .ttxt{text-decoration:line-through}
+.tcheck{width:28px;height:28px;border-radius:8px;border:2px solid #334155;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;color:transparent}
+.tcheck.on{background:#22C55E;border-color:#22C55E;color:#fff}
+.tbody{flex:1}
+.ttxt{font-size:13px;font-weight:500;line-height:1.4}
+.tmeta{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
+.ttag{font-size:9px;padding:2px 6px;border-radius:4px;font-weight:600}
+.ttag-time{background:rgba(59,130,246,.12);color:#3B82F6}
+.ttag-hi{background:rgba(239,68,68,.12);color:#EF4444}
+.ttag-md{background:rgba(245,158,11,.12);color:#F59E0B}
+.tnote{font-size:11px;color:#94A3B8;margin-top:4px}
+.tdone{font-size:10px;color:#22C55E;margin-top:3px}
+
+/* FAB */
+.fab{position:absolute;bottom:70px;right:16px;width:52px;height:52px;border-radius:16px;background:#D4A853;color:#0F172A;font-size:28px;font-weight:700;display:none;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(212,168,83,.4);z-index:20}
+
+/* BOTTOM NAV */
+.bnav{display:flex;border-top:1px solid #334155;background:#0F172A;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom,4px)}
+.bnav button{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:2px;font-size:9px;color:#64748B;font-weight:600;background:none}
+.bnav button.on{color:#D4A853}
+.bnav .ni{font-size:18px}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:100;align-items:flex-end;justify-content:center}
+.modal-bg.show{display:flex}
+.modal-sheet{background:#1E293B;border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:16px;padding-bottom:32px}
+.modal-sheet h2{font-size:16px;font-weight:800;color:#F8FAFC;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.modal-sheet h2 button{color:#D4A853;font-size:13px;font-weight:600;background:none}
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:11px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.fg-row{display:flex;gap:8px}
+.fg-row>div{flex:1}
+.modal-save{width:100%;padding:14px;border-radius:12px;background:#D4A853;color:#0F172A;font-size:15px;font-weight:800;margin-top:8px}
+
+/* HANDOVER */
+.ho-card{background:#1E293B;border-radius:12px;padding:14px;border-left:3px solid #D4A853;margin-bottom:10px}
+.ho-card h3{font-size:13px;font-weight:700;color:#D4A853;margin-bottom:4px}
+.ho-card .nt{font-size:12px;color:#94A3B8;line-height:1.5}
+.ho-card .na{font-size:10px;color:#64748B;margin-top:4px}
+
+.page{display:none;flex:1;flex-direction:column;overflow:hidden}
+.page.show{display:flex}
+.empty-msg{text-align:center;padding:40px;color:#64748B;font-size:13px}
+
+/* IPHONE FIX: make buttons respond to touch */
+button,
+.tcheck,
+.shift-btn{cursor:pointer;-webkit-user-select:none;user-select:none}
+
+/* QR MODAL */
+.qr-modal-content{background:#fff;border-radius:16px;padding:24px;text-align:center;margin:0 auto;max-width:320px}
+.qr-modal-content h3{color:#0F172A;font-size:16px;font-weight:800;margin-bottom:16px}
+.qr-container{display:flex;justify-content:center;margin-bottom:16px}
+.qr-url{font-size:11px;color:#64748B;word-break:break-all;margin-bottom:12px;padding:8px;background:#F1F5F9;border-radius:8px}
+.qr-copy-btn{padding:10px 20px;border-radius:8px;background:#D4A853;color:#0F172A;font-size:13px;font-weight:700;margin-bottom:8px}
+.qr-copy-btn:active{background:#B8922E}
+.qr-close-btn{padding:8px 16px;border-radius:8px;background:#E2E8F0;color:#64748B;font-size:12px;font-weight:600}
+
+/* ACTIVE USERS */
+.active-users-section{margin-bottom:16px}
+.active-users-section h3{font-size:13px;font-weight:700;color:#D4A853;margin-bottom:8px;padding:0 4px}
+.active-user-card{display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:4px;border-radius:10px;background:#1E293B}
+.active-user-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0}
+.active-user-info{flex:1}
+.active-user-name{font-size:13px;font-weight:600}
+.active-user-role{font-size:10px;color:#94A3B8}
+.active-user-time{font-size:9px;color:#64748B}
+</style>
+</head>
+<body>
+<noscript>
+<div style="padding:40px;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#F8FAFC;background:#0F172A;min-height:100vh;display:flex;align-items:center;justify-content:center">
+<div>
+<div style="font-size:48px;margin-bottom:16px">&#9888;&#65039;</div>
+<h2 style="color:#D4A853;margin-bottom:12px">JavaScript Required</h2>
+<p style="color:#94A3B8;font-size:14px">Please open this link in Safari to use the Shift Manager app.</p>
+</div>
+</div>
+</noscript>
+<div id="app">
+
+<!-- PAGE: LOGIN -->
+<div class="page show" id="pgLogin">
+<div class="login-view">
+  <div style="font-size:48px">&#11088;</div>
+  <h1>Shift Manager</h1>
+  <p>5-Star Hotel &mdash; Zurich</p>
+  <select id="inRole">
+    <option value="">Select your role...</option>
+    <option value="supervisor">&#128084; Supervisor</option>
+    <option value="waiter">&#127869;&#65039; Waiter</option>
+    <option value="bartender">&#127864; Bartender</option>
+    <option value="runner">&#127939; Runner</option>
+    <option value="roomservice">&#128718;&#65039; Room Service</option>
+    <option value="skylounge">&#127747; Skylounge</option>
+  </select>
+  <input id="inName" placeholder="Your name">
+  <button class="login-btn" onclick="doLogin()">Start Shift &#8594;</button>
+</div>
+</div>
+
+<!-- PAGE: TASKS -->
+<div class="page" id="pgTasks">
+  <div class="hdr">
+    <span class="conn-dot offline" id="connDot" title="Offline"></span>
+    <div class="hdr-title">Shift Manager<br><span class="hdr-sub" id="hdUser"></span></div>
+    <button class="hdr-btn" id="qrBtn" style="display:none" onclick="openQR()">&#9641;&#9641;</button>
+    <button class="hdr-btn" onclick="doLogout()">&#128100;</button>
+  </div>
+  <div class="shifts" id="shiftBar">
+    <button class="shift-btn on" onclick="pickShift('morning')">&#9728;&#65039; Morning<br><span style="font-size:10px;font-weight:400;opacity:.6">06:00&#8211;15:00</span></button>
+    <button class="shift-btn" onclick="pickShift('evening')">&#127769; Evening<br><span style="font-size:10px;font-weight:400;opacity:.6">15:00&#8211;23:00</span></button>
+  </div>
+  <div class="datebar">
+    <button onclick="moveDate(-1)">&#8592;</button>
+    <div class="datelbl" id="dateLbl"></div>
+    <button onclick="moveDate(1)">&#8594;</button>
+  </div>
+  <div class="stats" id="statsDiv"></div>
+  <div class="tasklist" id="taskDiv"></div>
+  <button class="fab" id="fabBtn" onclick="openAdd()">+</button>
+  <div class="bnav">
+    <button class="on" onclick="showPage('pgTasks')"><span class="ni">&#128203;</span>Tasks</button>
+    <button onclick="showPage('pgHandover')"><span class="ni">&#128221;</span>Handover</button>
+    <button onclick="showPage('pgTeam')"><span class="ni">&#128101;</span>Team</button>
+  </div>
+</div>
+
+<!-- PAGE: HANDOVER -->
+<div class="page" id="pgHandover">
+  <div class="hdr">
+    <span class="conn-dot offline" id="connDot2"></span>
+    <div class="hdr-title">Shift Handover</div>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch" id="hoDiv"></div>
+  <div class="bnav">
+    <button onclick="showPage('pgTasks')"><span class="ni">&#128203;</span>Tasks</button>
+    <button class="on" onclick="showPage('pgHandover')"><span class="ni">&#128221;</span>Handover</button>
+    <button onclick="showPage('pgTeam')"><span class="ni">&#128101;</span>Team</button>
+  </div>
+</div>
+
+<!-- PAGE: TEAM -->
+<div class="page" id="pgTeam">
+  <div class="hdr">
+    <span class="conn-dot offline" id="connDot3"></span>
+    <div class="hdr-title">Team Progress</div>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch" id="teamDiv"></div>
+  <div class="bnav">
+    <button onclick="showPage('pgTasks')"><span class="ni">&#128203;</span>Tasks</button>
+    <button onclick="showPage('pgHandover')"><span class="ni">&#128221;</span>Handover</button>
+    <button class="on" onclick="showPage('pgTeam')"><span class="ni">&#128101;</span>Team</button>
+  </div>
+</div>
+
+<!-- MODAL: ADD TASK -->
+<div class="modal-bg" id="addModal" onclick="if(event.target===this)closeAdd()">
+<div class="modal-sheet">
+  <h2>New Task <button onclick="closeAdd()">Cancel</button></h2>
+  <div class="fg"><label>Task</label><input id="atText" placeholder="What needs to be done?"></div>
+  <div class="fg-row">
+    <div class="fg"><label>Role</label><select id="atRole"><option value="all">All</option><option value="waiter">&#127869;&#65039; Waiter</option><option value="bartender">&#127864; Bartender</option><option value="runner">&#127939; Runner</option><option value="roomservice">&#128718;&#65039; Room Service</option><option value="skylounge">&#127747; Skylounge</option></select></div>
+    <div class="fg"><label>Priority</label><select id="atPrio"><option value="normal">Normal</option><option value="medium">&#9888;&#65039; Medium</option><option value="high">&#128308; High</option></select></div>
+  </div>
+  <div class="fg-row">
+    <div class="fg"><label>Shift</label><select id="atShift"><option value="morning">&#9728;&#65039; Morning</option><option value="evening">&#127769; Evening</option><option value="both">Both</option></select></div>
+    <div class="fg"><label>Time</label><input id="atTime" type="time"></div>
+  </div>
+  <div class="fg"><label>Notes</label><textarea id="atNote" placeholder="Details..." rows="2" style="min-height:50px"></textarea></div>
+  <button class="modal-save" onclick="saveTask()">Save Task</button>
+</div>
+</div>
+
+<!-- MODAL: QR CODE -->
+<div class="modal-bg" id="qrModal" onclick="if(event.target===this)closeQR()">
+<div class="modal-sheet" style="display:flex;justify-content:center">
+  <div class="qr-modal-content">
+    <h3>Share Shift Link</h3>
+    <div class="qr-container" id="qrCodeDiv"></div>
+    <div class="qr-url" id="qrUrlText"></div>
+    <button class="qr-copy-btn" onclick="copyQRLink()">Copy Link</button><br>
+    <button class="qr-close-btn" onclick="closeQR()">Close</button>
+  </div>
+</div>
+</div>
+
+</div>
+
+<!-- Firebase v9 compat CDN -->
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-database-compat.js"></script>
+<!-- QR Code CDN -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+<script>
+// ===== FIREBASE CONFIG (REPLACE WITH YOUR OWN) =====
+var firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+// ===== FIREBASE INIT =====
+var fbApp = null;
+var fbDb = null;
+var fbConnected = false;
+var fbListeners = [];
+var activeUserKey = null;
+
+function isFirebaseConfigured() {
+  return firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY";
+}
+
+function initFirebase() {
+  if (!isFirebaseConfigured()) {
+    console.log('[ShiftManager] Firebase not configured — running in local mode.');
+    updateConnDot(false);
+    return;
+  }
+  try {
+    fbApp = firebase.initializeApp(firebaseConfig);
+    fbDb = firebase.database();
+    // Monitor connection state
+    fbDb.ref('.info/connected').on('value', function(snap) {
+      fbConnected = !!snap.val();
+      updateConnDot(fbConnected);
+    });
+  } catch(e) {
+    console.error('[ShiftManager] Firebase init error:', e);
+    updateConnDot(false);
+  }
+}
+
+function updateConnDot(online) {
+  var dots = document.querySelectorAll('.conn-dot');
+  for (var i = 0; i < dots.length; i++) {
+    dots[i].className = 'conn-dot ' + (online ? 'online' : 'offline');
+    dots[i].title = online ? 'Connected to Firebase' : 'Offline / Local mode';
+  }
+}
+
+// ===== FIREBASE HELPERS =====
+function fbPath(parts) {
+  return parts.join('/');
+}
+
+function fbShiftPath() {
+  return 'shifts/' + dk(curDate) + '/' + curShift;
+}
+
+function detachAllListeners() {
+  if (!fbDb) return;
+  for (var i = 0; i < fbListeners.length; i++) {
+    try { fbListeners[i].ref.off('value', fbListeners[i].cb); } catch(e) {}
+  }
+  fbListeners = [];
+}
+
+function attachShiftListeners() {
+  detachAllListeners();
+  if (!fbDb) return;
+
+  // Listen to completions
+  var compRef = fbDb.ref(fbShiftPath() + '/completions');
+  var compCb = compRef.on('value', function(snap) {
+    var val = snap.val() || {};
+    var key = dk(curDate);
+    if (!comps[key]) comps[key] = {};
+    comps[key][curShift] = val;
+    saveLocalComps();
+    renderTasks();
+  });
+  fbListeners.push({ref: compRef, cb: compCb});
+
+  // Listen to handovers
+  var hoRef = fbDb.ref(fbShiftPath() + '/handovers');
+  var hoCb = hoRef.on('value', function(snap) {
+    var val = snap.val();
+    if (!val) return;
+    // Merge firebase handovers into local array for this date+shift
+    var key = dk(curDate);
+    var fbNotes = [];
+    if (Array.isArray(val)) {
+      fbNotes = val;
+    } else {
+      // Object with push keys
+      var keys = Object.keys(val);
+      for (var i = 0; i < keys.length; i++) {
+        fbNotes.push(val[keys[i]]);
+      }
+    }
+    // Replace local handovers for this date+shift with firebase data
+    var kept = [];
+    for (var i = 0; i < handovers.length; i++) {
+      if (handovers[i].date !== key || handovers[i].shift !== curShift) {
+        kept.push(handovers[i]);
+      }
+    }
+    for (var i = 0; i < fbNotes.length; i++) {
+      var n = fbNotes[i];
+      kept.push({date: key, shift: curShift, text: n.text, author: n.author, role: n.role, time: n.time});
+    }
+    handovers = kept;
+    saveLocalHandovers();
+    // Only re-render if we're on the handover page
+    if (document.getElementById('pgHandover').classList.contains('show')) {
+      renderHandover();
+    }
+  });
+  fbListeners.push({ref: hoRef, cb: hoCb});
+
+  // Listen to active users
+  var auRef = fbDb.ref(fbShiftPath() + '/activeUsers');
+  var auCb = auRef.on('value', function(snap) {
+    activeUsers = snap.val() || {};
+    if (document.getElementById('pgTeam').classList.contains('show')) {
+      renderTeam();
+    }
+  });
+  fbListeners.push({ref: auRef, cb: auCb});
+}
+
+function attachTasksListener() {
+  if (!fbDb) return;
+  var tRef = fbDb.ref('tasks');
+  var tCb = tRef.on('value', function(snap) {
+    var val = snap.val();
+    if (val) {
+      var fbTasks = [];
+      if (Array.isArray(val)) {
+        fbTasks = val;
+      } else {
+        var keys = Object.keys(val);
+        for (var i = 0; i < keys.length; i++) {
+          fbTasks.push(val[keys[i]]);
+        }
+      }
+      if (fbTasks.length > 0) {
+        tasks = fbTasks;
+        saveLocalTasks();
+        renderTasks();
+      }
+    }
+  });
+  fbListeners.push({ref: tRef, cb: tCb});
+}
+
+// Sync completion to Firebase
+function syncCompToFirebase(taskId, compData) {
+  if (!fbDb) return;
+  var ref = fbDb.ref(fbShiftPath() + '/completions/' + taskId);
+  if (compData) {
+    ref.set(compData);
+  } else {
+    ref.remove();
+  }
+}
+
+// Sync handover to Firebase
+function syncHandoverToFirebase(note) {
+  if (!fbDb) return;
+  var ref = fbDb.ref(fbShiftPath() + '/handovers');
+  ref.push({text: note.text, author: note.author, role: note.role || '', time: note.time});
+}
+
+// Sync task to Firebase
+function syncTaskToFirebase(task) {
+  if (!fbDb) return;
+  fbDb.ref('tasks').set(tasks);
+}
+
+// Register active user
+function registerActiveUser() {
+  if (!fbDb || !user) return;
+  var ref = fbDb.ref(fbShiftPath() + '/activeUsers');
+  var newRef = ref.push();
+  activeUserKey = newRef.key;
+  newRef.set({name: user.name, role: user.role, joinedAt: new Date().toISOString()});
+  // Remove on disconnect
+  newRef.onDisconnect().remove();
+}
+
+// Unregister active user
+function unregisterActiveUser() {
+  if (!fbDb || !activeUserKey) return;
+  fbDb.ref(fbShiftPath() + '/activeUsers/' + activeUserKey).remove();
+  activeUserKey = null;
+}
+
+// ===== DATA =====
+var ROLES = {
+  supervisor: {icon:'\uD83D\uDC54', label:'Supervisor', color:'#D4A853'},
+  waiter: {icon:'\uD83C\uDF7D\uFE0F', label:'Waiter', color:'#3B82F6'},
+  bartender: {icon:'\uD83C\uDF78', label:'Bartender', color:'#A855F7'},
+  runner: {icon:'\uD83C\uDFC3', label:'Runner', color:'#22C55E'},
+  roomservice: {icon:'\uD83D\uDECE\uFE0F', label:'Room Service', color:'#F59E0B'},
+  skylounge: {icon:'\uD83C\uDF03', label:'Skylounge', color:'#EC4899'}
+};
+
+var user = null;
+var tasks = [];
+var comps = {};
+var handovers = [];
+var activeUsers = {};
+var curShift = 'morning';
+var curDate = new Date();
+
+// ===== URL PARAMS =====
+function readUrlParams() {
+  try {
+    var params = new URLSearchParams(window.location.search);
+    var shift = params.get('shift');
+    var date = params.get('date');
+    if (shift === 'morning' || shift === 'evening') {
+      curShift = shift;
+    }
+    if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      var parts = date.split('-');
+      var d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      if (!isNaN(d.getTime())) {
+        curDate = d;
+      }
+    }
+  } catch(e) {}
+}
+
+// ===== STORAGE =====
+function loadData() {
+  try {
+    var u = localStorage.getItem('sm_user');
+    if (u) user = JSON.parse(u);
+    var t = localStorage.getItem('sm_tasks');
+    if (t) tasks = JSON.parse(t);
+    var c = localStorage.getItem('sm_comps');
+    if (c) comps = JSON.parse(c);
+    var h = localStorage.getItem('sm_handovers');
+    if (h) handovers = JSON.parse(h);
+  } catch(e) {}
+  if (!tasks || tasks.length === 0) {
+    tasks = getDefaults();
+  }
+}
+
+function saveData() {
+  saveLocalTasks();
+  saveLocalComps();
+  saveLocalHandovers();
+}
+
+function saveLocalTasks() {
+  try { localStorage.setItem('sm_tasks', JSON.stringify(tasks)); } catch(e) {}
+}
+function saveLocalComps() {
+  try { localStorage.setItem('sm_comps', JSON.stringify(comps)); } catch(e) {}
+}
+function saveLocalHandovers() {
+  try { localStorage.setItem('sm_handovers', JSON.stringify(handovers)); } catch(e) {}
+}
+
+function dk(d) {
+  var y = d.getFullYear();
+  var m = ('0'+(d.getMonth()+1)).slice(-2);
+  var day = ('0'+d.getDate()).slice(-2);
+  return y+'-'+m+'-'+day;
+}
+
+function todayKey() { return dk(new Date()); }
+
+function fmtDate(d) {
+  var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()];
+}
+
+function esc(s) {
+  if (!s) return '';
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ===== DEFAULT TASKS =====
+function getDefaults() {
+  return [
+    {id:'d1',text:'Check mise en place \u2014 all stations',role:'all',shift:'both',priority:'high',time:'',note:'Every station must be fully stocked before service'},
+    {id:'d2',text:'Polish all glassware and cutlery',role:'waiter',shift:'morning',priority:'normal',time:'07:00',note:''},
+    {id:'d3',text:'Fold napkins \u2014 minimum 60 pieces',role:'waiter',shift:'morning',priority:'normal',time:'08:00',note:''},
+    {id:'d4',text:'Set up all tables per floor plan',role:'waiter',shift:'morning',priority:'high',time:'09:00',note:'Check reservation list for special setups'},
+    {id:'d5',text:'Restock bar \u2014 all spirits, wines, mixers',role:'bartender',shift:'morning',priority:'high',time:'07:00',note:'Log items below minimum on order sheet'},
+    {id:'d6',text:'Prepare fresh garnishes and juices',role:'bartender',shift:'morning',priority:'normal',time:'08:00',note:''},
+    {id:'d7',text:'Clean and polish bar counter',role:'bartender',shift:'morning',priority:'normal',time:'09:00',note:''},
+    {id:'d8',text:'Check tray stations \u2014 plates, covers',role:'runner',shift:'both',priority:'normal',time:'',note:''},
+    {id:'d9',text:'Verify room service trays and amenities',role:'roomservice',shift:'morning',priority:'high',time:'06:30',note:'Check VIP rooms for special requests'},
+    {id:'d10',text:'Prepare welcome drinks for arrivals',role:'roomservice',shift:'morning',priority:'medium',time:'10:00',note:'Check PMS for arrivals list'},
+    {id:'d11',text:'Open skylounge \u2014 lights, music, temp',role:'skylounge',shift:'evening',priority:'high',time:'16:00',note:'Sunset playlist, 22\u00B0C'},
+    {id:'d12',text:'Restock skylounge bar and snacks',role:'skylounge',shift:'evening',priority:'normal',time:'16:30',note:''},
+    {id:'d13',text:'Brief team on reservations and VIPs',role:'supervisor',shift:'both',priority:'high',time:'',note:'Allergies, special occasions, VIP preferences'},
+    {id:'d14',text:'Final walkthrough \u2014 all areas ready',role:'supervisor',shift:'both',priority:'high',time:'',note:'30 min before service'},
+    {id:'d15',text:'Evening table reset and candle lighting',role:'waiter',shift:'evening',priority:'normal',time:'17:00',note:''},
+    {id:'d16',text:'Close bar \u2014 clean, lock spirits, cash count',role:'bartender',shift:'evening',priority:'high',time:'22:30',note:'Two-person verification for cash'},
+    {id:'d17',text:'Night room service setup \u2014 limited menu',role:'roomservice',shift:'evening',priority:'normal',time:'22:00',note:''},
+    {id:'d18',text:'End of shift cleaning \u2014 all stations',role:'all',shift:'both',priority:'high',time:'',note:'Leave everything ready for next shift'}
+  ];
+}
+
+// ===== LOGIN =====
+function doLogin() {
+  var role = document.getElementById('inRole').value;
+  var name = document.getElementById('inName').value.replace(/^\s+|\s+$/g,'');
+  if (!role) { alert('Please select your role'); return; }
+  if (!name) { alert('Please enter your name'); return; }
+  user = {role: role, name: name};
+  try { localStorage.setItem('sm_user', JSON.stringify(user)); } catch(e) {}
+  registerActiveUser();
+  showMain();
+}
+
+function doLogout() {
+  if (!confirm('Log out?')) return;
+  unregisterActiveUser();
+  user = null;
+  try { localStorage.removeItem('sm_user'); } catch(e) {}
+  showPage('pgLogin');
+}
+
+// ===== NAVIGATION =====
+function showPage(id) {
+  var pages = document.querySelectorAll('.page');
+  for (var i=0; i<pages.length; i++) pages[i].className = 'page';
+  document.getElementById(id).className = 'page show';
+
+  // Update nav buttons
+  var navBtns = document.querySelectorAll('.bnav button');
+  for (var i=0; i<navBtns.length; i++) navBtns[i].className = '';
+
+  if (id === 'pgTasks') renderTasks();
+  if (id === 'pgHandover') renderHandover();
+  if (id === 'pgTeam') renderTeam();
+}
+
+function showMain() {
+  showPage('pgTasks');
+  var r = ROLES[user.role] || {icon:'', label:''};
+  document.getElementById('hdUser').textContent = r.icon + ' ' + user.name + ' \u2014 ' + r.label;
+  if (user.role === 'supervisor') {
+    document.getElementById('fabBtn').style.display = 'flex';
+    document.getElementById('qrBtn').style.display = 'flex';
+  } else {
+    document.getElementById('fabBtn').style.display = 'none';
+    document.getElementById('qrBtn').style.display = 'none';
+  }
+  renderDate();
+  renderTasks();
+  // Attach firebase listeners
+  attachShiftListeners();
+  attachTasksListener();
+}
+
+// ===== SHIFT =====
+function pickShift(s) {
+  // Unregister from old shift active users
+  unregisterActiveUser();
+  curShift = s;
+  var btns = document.getElementById('shiftBar').querySelectorAll('.shift-btn');
+  for (var i=0; i<btns.length; i++) {
+    btns[i].className = 'shift-btn';
+  }
+  if (s === 'morning') btns[0].className = 'shift-btn on';
+  else btns[1].className = 'shift-btn on';
+  // Re-register on new shift
+  registerActiveUser();
+  attachShiftListeners();
+  renderTasks();
+}
+
+// ===== DATE =====
+function moveDate(dir) {
+  unregisterActiveUser();
+  curDate.setDate(curDate.getDate() + dir);
+  renderDate();
+  registerActiveUser();
+  attachShiftListeners();
+  renderTasks();
+}
+
+function renderDate() {
+  var isToday = dk(curDate) === todayKey();
+  document.getElementById('dateLbl').innerHTML = fmtDate(curDate) + (isToday ? '<br><span style="font-size:11px;color:#94A3B8">Today</span>' : '');
+}
+
+// ===== TASKS =====
+function getVisible() {
+  var result = [];
+  for (var i=0; i<tasks.length; i++) {
+    var t = tasks[i];
+    if (t.shift !== 'both' && t.shift !== curShift) continue;
+    if (user.role !== 'supervisor' && t.role !== 'all' && t.role !== user.role) continue;
+    result.push(t);
+  }
+  return result;
+}
+
+function isDone(tid) {
+  var key = dk(curDate);
+  if (!comps[key]) return false;
+  if (!comps[key][curShift]) return false;
+  return !!comps[key][curShift][tid];
+}
+
+function getComp(tid) {
+  var key = dk(curDate);
+  if (!comps[key] || !comps[key][curShift]) return null;
+  return comps[key][curShift][tid] || null;
+}
+
+function toggleTask(tid) {
+  var key = dk(curDate);
+  if (!comps[key]) comps[key] = {};
+  if (!comps[key][curShift]) comps[key][curShift] = {};
+  var compData = null;
+  if (comps[key][curShift][tid]) {
+    delete comps[key][curShift][tid];
+  } else {
+    compData = {
+      by: user.name,
+      role: user.role,
+      at: new Date().toISOString()
+    };
+    comps[key][curShift][tid] = compData;
+  }
+  saveData();
+  syncCompToFirebase(tid, compData);
+  renderTasks();
+}
+
+function renderTasks() {
+  var vis = getVisible();
+  var doneN = 0;
+  for (var i=0; i<vis.length; i++) { if (isDone(vis[i].id)) doneN++; }
+
+  // Stats
+  document.getElementById('statsDiv').innerHTML =
+    '<div class="done"><div class="n">' + doneN + '</div><div class="l">Done</div></div>' +
+    '<div class="pend"><div class="n">' + (vis.length - doneN) + '</div><div class="l">Pending</div></div>' +
+    '<div class="tot"><div class="n">' + vis.length + '</div><div class="l">Total</div></div>';
+
+  if (vis.length === 0) {
+    document.getElementById('taskDiv').innerHTML = '<div class="empty-msg">No tasks for this shift</div>';
+    return;
+  }
+
+  // Group by role
+  var groups = {};
+  var order = ['all','supervisor','waiter','bartender','runner','roomservice','skylounge'];
+  for (var i=0; i<vis.length; i++) {
+    var r = vis[i].role;
+    if (!groups[r]) groups[r] = [];
+    groups[r].push(vis[i]);
+  }
+
+  var html = '';
+  for (var oi=0; oi<order.length; oi++) {
+    var rk = order[oi];
+    if (!groups[rk]) continue;
+    var role = rk === 'all' ? {icon:'\uD83D\uDC65', label:'Everyone', color:'#94A3B8'} : ROLES[rk];
+    if (!role) continue;
+    var rTasks = groups[rk];
+
+    // Sort by time
+    rTasks.sort(function(a,b){ return (a.time||'99').localeCompare(b.time||'99'); });
+
+    var rDone = 0;
+    for (var j=0; j<rTasks.length; j++) { if (isDone(rTasks[j].id)) rDone++; }
+    var pct = Math.round(rDone / rTasks.length * 100);
+
+    html += '<div class="rgroup">';
+    html += '<div class="rgroup-hdr">';
+    html += '<div class="rgroup-icon" style="background:' + role.color + '20;color:' + role.color + '">' + role.icon + '</div>';
+    html += '<h3>' + role.label + '</h3>';
+    html += '<span class="cnt">' + rDone + '/' + rTasks.length + '</span>';
+    html += '<div class="pbar"><div class="pbar-fill" style="width:' + pct + '%;background:' + (pct===100?'#22C55E':role.color) + '"></div></div>';
+    html += '</div>';
+
+    for (var j=0; j<rTasks.length; j++) {
+      var t = rTasks[j];
+      var done = isDone(t.id);
+      var comp = done ? getComp(t.id) : null;
+      var cls = 'task';
+      if (done) cls += ' dn';
+      if (t.priority === 'high') cls += ' hi';
+      if (t.priority === 'medium') cls += ' md';
+
+      html += '<div class="' + cls + '">';
+      html += '<div class="tcheck ' + (done?'on':'') + '" onclick="toggleTask(\'' + t.id + '\')">' + (done?'\u2713':'') + '</div>';
+      html += '<div class="tbody">';
+      html += '<div class="ttxt">' + esc(t.text) + '</div>';
+      html += '<div class="tmeta">';
+      if (t.time) html += '<span class="ttag ttag-time">' + t.time + '</span>';
+      if (t.priority === 'high') html += '<span class="ttag ttag-hi">HIGH</span>';
+      if (t.priority === 'medium') html += '<span class="ttag ttag-md">MEDIUM</span>';
+      html += '</div>';
+      if (t.note) html += '<div class="tnote">' + esc(t.note) + '</div>';
+      if (comp) {
+        var dt = new Date(comp.at);
+        var timeStr = ('0'+dt.getHours()).slice(-2) + ':' + ('0'+dt.getMinutes()).slice(-2);
+        html += '<div class="tdone">\u2713 ' + esc(comp.by) + ' \u2014 ' + timeStr + '</div>';
+      }
+      html += '</div></div>';
+    }
+    html += '</div>';
+  }
+
+  document.getElementById('taskDiv').innerHTML = html;
+}
+
+// ===== HANDOVER =====
+function renderHandover() {
+  var key = dk(curDate);
+  var notes = [];
+  for (var i=0; i<handovers.length; i++) {
+    if (handovers[i].date === key) notes.push(handovers[i]);
+  }
+
+  var html = '';
+  if (notes.length) {
+    for (var i=0; i<notes.length; i++) {
+      var n = notes[i];
+      html += '<div class="ho-card">';
+      html += '<h3>' + (n.shift==='morning'?'\u2600\uFE0F Morning':'\uD83C\uDF19 Evening') + ' \u2192 Next shift</h3>';
+      html += '<div class="nt">' + esc(n.text).replace(/\n/g,'<br>') + '</div>';
+      html += '<div class="na">\u2014 ' + esc(n.author) + ', ' + n.time + '</div>';
+      html += '</div>';
+    }
+  } else {
+    html += '<div class="empty-msg">\uD83D\uDCDD No handover notes yet</div>';
+  }
+
+  html += '<div style="margin-top:16px">';
+  html += '<textarea id="hoText" placeholder="Leave a note for the next shift..." style="min-height:60px"></textarea>';
+  html += '<button class="modal-save" style="margin-top:8px" onclick="saveHandover()">\uD83D\uDCDD Save Handover Note</button>';
+  html += '</div>';
+
+  document.getElementById('hoDiv').innerHTML = html;
+}
+
+function saveHandover() {
+  var el = document.getElementById('hoText');
+  if (!el) return;
+  var text = el.value.replace(/^\s+|\s+$/g,'');
+  if (!text) return;
+  var now = new Date();
+  var timeStr = ('0'+now.getHours()).slice(-2) + ':' + ('0'+now.getMinutes()).slice(-2);
+  var note = {
+    date: dk(curDate),
+    shift: curShift,
+    text: text,
+    author: user.name,
+    role: user.role,
+    time: timeStr
+  };
+  handovers.push(note);
+  saveData();
+  syncHandoverToFirebase(note);
+  renderHandover();
+}
+
+// ===== TEAM =====
+function renderTeam() {
+  var html = '';
+
+  // Active Users section
+  var auKeys = Object.keys(activeUsers);
+  if (auKeys.length > 0) {
+    html += '<div class="active-users-section">';
+    html += '<h3>\uD83D\uDFE2 Currently on Shift (' + auKeys.length + ')</h3>';
+    for (var i = 0; i < auKeys.length; i++) {
+      var au = activeUsers[auKeys[i]];
+      if (!au || !au.name) continue;
+      var auRole = ROLES[au.role] || {icon:'?', label:'Unknown', color:'#94A3B8'};
+      var initials = au.name.split(' ').map(function(w){ return w.charAt(0).toUpperCase(); }).join('').substring(0, 2);
+      var joinTime = '';
+      if (au.joinedAt) {
+        var jd = new Date(au.joinedAt);
+        joinTime = ('0'+jd.getHours()).slice(-2) + ':' + ('0'+jd.getMinutes()).slice(-2);
+      }
+      html += '<div class="active-user-card">';
+      html += '<div class="active-user-avatar" style="background:' + auRole.color + '">' + initials + '</div>';
+      html += '<div class="active-user-info"><div class="active-user-name">' + esc(au.name) + '</div>';
+      html += '<div class="active-user-role">' + auRole.icon + ' ' + auRole.label + '</div></div>';
+      if (joinTime) html += '<div class="active-user-time">since ' + joinTime + '</div>';
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  // Role progress section
+  html += '<div class="active-users-section"><h3>Role Progress</h3></div>';
+  var keys = ['supervisor','waiter','bartender','runner','roomservice','skylounge'];
+  for (var k=0; k<keys.length; k++) {
+    var rk = keys[k];
+    var role = ROLES[rk];
+    // Count tasks for this role in current shift
+    var total = 0, done = 0;
+    for (var i=0; i<tasks.length; i++) {
+      var t = tasks[i];
+      if (t.shift !== 'both' && t.shift !== curShift) continue;
+      if (t.role !== 'all' && t.role !== rk) continue;
+      total++;
+      if (isDone(t.id)) done++;
+    }
+    var pct = total ? Math.round(done/total*100) : 0;
+
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:12px;margin-bottom:6px;border-radius:10px;background:#1E293B">';
+    html += '<div class="rgroup-icon" style="background:' + role.color + '20;color:' + role.color + ';width:36px;height:36px;font-size:18px">' + role.icon + '</div>';
+    html += '<div style="flex:1"><div style="font-size:13px;font-weight:700">' + role.label + '</div><div style="font-size:11px;color:#94A3B8">' + done + '/' + total + ' tasks</div></div>';
+    html += '<div style="text-align:right"><div style="font-size:18px;font-weight:800;color:' + (pct===100?'#22C55E':'#D4A853') + '">' + pct + '%</div>';
+    html += '<div class="pbar" style="width:50px;margin-top:4px"><div class="pbar-fill" style="width:' + pct + '%;background:' + (pct===100?'#22C55E':role.color) + '"></div></div>';
+    html += '</div></div>';
+  }
+  document.getElementById('teamDiv').innerHTML = html;
+}
+
+// ===== ADD TASK =====
+function openAdd() {
+  document.getElementById('addModal').className = 'modal-bg show';
+}
+function closeAdd() {
+  document.getElementById('addModal').className = 'modal-bg';
+}
+function saveTask() {
+  var text = document.getElementById('atText').value.replace(/^\s+|\s+$/g,'');
+  if (!text) { alert('Please enter a task'); return; }
+  tasks.push({
+    id: 't' + Date.now(),
+    text: text,
+    role: document.getElementById('atRole').value,
+    shift: document.getElementById('atShift').value,
+    priority: document.getElementById('atPrio').value,
+    time: document.getElementById('atTime').value,
+    note: document.getElementById('atNote').value.replace(/^\s+|\s+$/g,'')
+  });
+  saveData();
+  syncTaskToFirebase();
+  renderTasks();
+  closeAdd();
+  document.getElementById('atText').value = '';
+  document.getElementById('atNote').value = '';
+  document.getElementById('atTime').value = '';
+}
+
+// ===== QR CODE =====
+var qrInstance = null;
+
+function openQR() {
+  var modal = document.getElementById('qrModal');
+  modal.className = 'modal-bg show';
+  var qrDiv = document.getElementById('qrCodeDiv');
+  qrDiv.innerHTML = '';
+  var url = buildShareUrl();
+  document.getElementById('qrUrlText').textContent = url;
+
+  try {
+    qrInstance = new QRCode(qrDiv, {
+      text: url,
+      width: 200,
+      height: 200,
+      colorDark: '#0F172A',
+      colorLight: '#FFFFFF',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  } catch(e) {
+    qrDiv.innerHTML = '<p style="color:#EF4444;font-size:12px">QR library not loaded</p>';
+  }
+}
+
+function closeQR() {
+  document.getElementById('qrModal').className = 'modal-bg';
+  qrInstance = null;
+}
+
+function buildShareUrl() {
+  var base = window.location.href.split('?')[0];
+  return base + '?shift=' + encodeURIComponent(curShift) + '&date=' + encodeURIComponent(dk(curDate));
+}
+
+function copyQRLink() {
+  var url = buildShareUrl();
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(function() {
+      alert('Link copied!');
+    });
+  } else {
+    // Fallback
+    var ta = document.createElement('textarea');
+    ta.value = url;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); alert('Link copied!'); } catch(e) { alert('Copy failed. URL: ' + url); }
+    document.body.removeChild(ta);
+  }
+}
+
+// ===== INIT =====
+try {
+  readUrlParams();
+  loadData();
+  initFirebase();
+
+  // Apply URL shift selection to UI
+  if (curShift === 'evening') {
+    var btns = document.getElementById('shiftBar').querySelectorAll('.shift-btn');
+    if (btns.length >= 2) {
+      btns[0].className = 'shift-btn';
+      btns[1].className = 'shift-btn on';
+    }
+  }
+
+  if (user) {
+    registerActiveUser();
+    showMain();
+  }
+  renderDate();
+} catch(e) {
+  document.body.innerHTML = '<div style="padding:32px;color:#EF4444;font-size:14px;font-family:monospace"><h2>Error</h2><pre>' + e.message + '</pre></div>';
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+  unregisterActiveUser();
+});
+</script>
+</body>
+</html>
